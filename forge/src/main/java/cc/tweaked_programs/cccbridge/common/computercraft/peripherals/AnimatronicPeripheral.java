@@ -23,6 +23,7 @@ public class AnimatronicPeripheral extends TweakedPeripheral<AnimatronicBlockEnt
     private float[] bodyRot;
     private float[] leftArmRot;
     private float[] rightArmRot;
+    private boolean shouldAnimate;
 
     public AnimatronicPeripheral(AnimatronicBlockEntity blockEntity) {
         super("animatronic",blockEntity);
@@ -31,6 +32,7 @@ public class AnimatronicPeripheral extends TweakedPeripheral<AnimatronicBlockEnt
         bodyRot = new float[]{0,0,0};
         leftArmRot = new float[]{0,0,0};
         rightArmRot = new float[]{0,0,0};
+        shouldAnimate = true;
     }
 
     /**
@@ -52,6 +54,22 @@ public class AnimatronicPeripheral extends TweakedPeripheral<AnimatronicBlockEnt
     }
 
     /**
+     * Sets if there should be easing between poses.
+     */
+    @LuaFunction
+    public final void setShouldAnimate(boolean shouldAnimate) {
+        this.shouldAnimate = shouldAnimate;
+    }
+
+    /**
+     * Checks if the animatronic skips easing between poses.
+     */
+    @LuaFunction
+    public final boolean getShouldAnimate() {
+        return shouldAnimate;
+    }
+
+    /**
      * Pushes the stored rotation values to the Animatronic.
      * After pushing them, the rotations get reset to 0 everywhere.
      */
@@ -59,6 +77,7 @@ public class AnimatronicPeripheral extends TweakedPeripheral<AnimatronicBlockEnt
     public final void push() {
         AnimatronicBlockEntity be = super.getTarget();
         if (be != null) {
+            be.setShouldAnimate(shouldAnimate);
             be.setHeadPose(headRot[0], headRot[1], headRot[2]);
             be.setBodyPose(bodyRot[0], bodyRot[1], bodyRot[2]);
             be.setLeftArmPose(leftArmRot[0], leftArmRot[1], leftArmRot[2]);
