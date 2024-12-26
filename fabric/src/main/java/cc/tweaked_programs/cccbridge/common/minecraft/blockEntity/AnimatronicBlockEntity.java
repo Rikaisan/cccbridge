@@ -10,7 +10,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Rotations;
-import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.protocol.Packet;
@@ -40,7 +39,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     private Rotations start_leftArmPose = new Rotations(0,0,0);
     private Rotations start_rightArmPose = new Rotations(0,0,0);
 
-    private boolean shouldAnimate;
+    private String animationMode;
     private boolean isMoving;
     private double step;
     private long start_animation;
@@ -52,7 +51,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     public AnimatronicBlockEntity(BlockPos pos, BlockState blockState) {
         super((BlockEntityType<AnimatronicBlockEntity>) CCCRegistries.ANIMATRONIC_BLOCK_ENTITY.get(), pos, blockState);
 
-        shouldAnimate = true;
+        animationMode = "rusty";
         isMoving = true;
         step = 0.0;
         face = "normal";
@@ -61,19 +60,33 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
 
     @Environment(EnvType.CLIENT)
     public void updateCurrentPoses(float partialTicks) {
-        step = (getLevel().getGameTime() - start_animation + partialTicks) * (0.0175 * 6);
+        switch (animationMode) {
+            case "rusty" -> {
+                step = (getLevel().getGameTime() - start_animation + partialTicks) * (0.0175 * 6);
 
-        current_headPose = updatePose(start_headPose, getDestinationHeadPose(), false);
-        current_bodyPose = updatePose(start_bodyPose, getDestinationBodyPose(), true);
-        current_leftArmPose = updatePose(start_leftArmPose, getDestinationLeftArmPose(), false);
-        current_rightArmPose = updatePose(start_rightArmPose, getDestinationRightArmPose(), false);
+                current_headPose = updatePose(start_headPose, getDestinationHeadPose(), false);
+                current_bodyPose = updatePose(start_bodyPose, getDestinationBodyPose(), true);
+                current_leftArmPose = updatePose(start_leftArmPose, getDestinationLeftArmPose(), false);
+                current_rightArmPose = updatePose(start_rightArmPose, getDestinationRightArmPose(), false);
 
-        if (step >= 1 || !shouldAnimate) {
-            isMoving = false;
-            current_headPose = getDestinationHeadPose();
-            current_bodyPose = getDestinationBodyPose();
-            current_leftArmPose = getDestinationLeftArmPose();
-            current_rightArmPose = getDestinationRightArmPose();
+                if (step >= 1) {
+                    isMoving = false;
+                    current_headPose = getDestinationHeadPose();
+                    current_bodyPose = getDestinationBodyPose();
+                    current_leftArmPose = getDestinationLeftArmPose();
+                    current_rightArmPose = getDestinationRightArmPose();
+                }
+            }
+            case "raw" -> {
+                // Could have used the old switch case syntax and done a fall through, but it's better to be explicit.
+                current_headPose = getDestinationHeadPose();
+                current_bodyPose = getDestinationBodyPose();
+                current_leftArmPose = getDestinationLeftArmPose();
+                current_rightArmPose = getDestinationRightArmPose();
+            }
+            default -> {
+                setAnimationMode("rusty"); // For old Animatronics
+            }
         }
     }
 
@@ -106,9 +119,9 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
         Rotations rightArmRot = ltRightArmPose.isEmpty() ? new Rotations(0,0,0) : new Rotations(ltRightArmPose);
         this.setRightArmPose(rightArmRot.getX(), rightArmRot.getY(), rightArmRot.getZ());
 
-        this.shouldAnimate = nbt.getBoolean("shouldAnimate");
-
         setFace(nbt.getString("face"));
+
+        setAnimationMode(nbt.getString("animationMode"));
 
         super.load(nbt);
 
@@ -118,13 +131,14 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
 
     @Override
     public void saveAdditional(@NotNull CompoundTag nbt) {
-        nbt.put("shouldAnimate", ByteTag.valueOf(shouldAnimate));
         nbt.put("headPose", getDestinationHeadPose().save());
         nbt.put("bodyPose", getDestinationBodyPose().save());
         nbt.put("leftArmPose", getDestinationLeftArmPose().save());
         nbt.put("rightArmPose", getDestinationRightArmPose().save());
         if (face != null)
             nbt.putString("face", face);
+        if (animationMode != null)
+            nbt.putString("animationMode", animationMode);
 
         super.saveAdditional(nbt);
     }
@@ -195,6 +209,8 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
         this.face = face;
     }
 
+    public void setAnimationMode(String animationMode) { this.animationMode = animationMode; }
+
     public void setRightArmPose(float x, float y, float z) {
         this.rightArmPose = new Rotations(x, y, z);
     }
@@ -246,6 +262,4 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     public Rotations getDestinationRightArmPose() {
         return rightArmPose;
     }
-
-    public void setShouldAnimate(boolean shouldAnimate) { this.shouldAnimate = shouldAnimate; }
 }
