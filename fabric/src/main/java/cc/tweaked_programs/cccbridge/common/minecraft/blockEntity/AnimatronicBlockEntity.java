@@ -10,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Rotations;
+import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.protocol.Packet;
@@ -39,6 +40,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     private Rotations start_leftArmPose = new Rotations(0,0,0);
     private Rotations start_rightArmPose = new Rotations(0,0,0);
 
+    private boolean shouldAnimate;
     private boolean isMoving;
     private double step;
     private long start_animation;
@@ -50,6 +52,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     public AnimatronicBlockEntity(BlockPos pos, BlockState blockState) {
         super((BlockEntityType<AnimatronicBlockEntity>) CCCRegistries.ANIMATRONIC_BLOCK_ENTITY.get(), pos, blockState);
 
+        shouldAnimate = true;
         isMoving = true;
         step = 0.0;
         face = "normal";
@@ -65,7 +68,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
         current_leftArmPose = updatePose(start_leftArmPose, getDestinationLeftArmPose(), false);
         current_rightArmPose = updatePose(start_rightArmPose, getDestinationRightArmPose(), false);
 
-        if (step >= 1) {
+        if (step >= 1 || !shouldAnimate) {
             isMoving = false;
             current_headPose = getDestinationHeadPose();
             current_bodyPose = getDestinationBodyPose();
@@ -103,6 +106,8 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
         Rotations rightArmRot = ltRightArmPose.isEmpty() ? new Rotations(0,0,0) : new Rotations(ltRightArmPose);
         this.setRightArmPose(rightArmRot.getX(), rightArmRot.getY(), rightArmRot.getZ());
 
+        this.shouldAnimate = nbt.getBoolean("shouldAnimate");
+
         setFace(nbt.getString("face"));
 
         super.load(nbt);
@@ -113,6 +118,7 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
 
     @Override
     public void saveAdditional(@NotNull CompoundTag nbt) {
+        nbt.put("shouldAnimate", ByteTag.valueOf(shouldAnimate));
         nbt.put("headPose", getDestinationHeadPose().save());
         nbt.put("bodyPose", getDestinationBodyPose().save());
         nbt.put("leftArmPose", getDestinationLeftArmPose().save());
@@ -240,4 +246,6 @@ public class AnimatronicBlockEntity extends BlockEntity implements PeripheralBlo
     public Rotations getDestinationRightArmPose() {
         return rightArmPose;
     }
+
+    public void setShouldAnimate(boolean shouldAnimate) { this.shouldAnimate = shouldAnimate; }
 }
