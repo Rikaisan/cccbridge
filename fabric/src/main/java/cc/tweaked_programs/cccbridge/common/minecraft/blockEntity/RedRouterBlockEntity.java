@@ -64,6 +64,7 @@ public class RedRouterBlockEntity extends BlockEntity implements PeripheralBlock
 
             redrouter.blockupdate = false;
         }
+
         updateInputs(world, blockPos, redrouter);
 
         if (redrouter.newInputs && redrouter.peripheral != null) {
@@ -72,7 +73,7 @@ public class RedRouterBlockEntity extends BlockEntity implements PeripheralBlock
         }
     }
 
-    public static void updateInputs(Level world, BlockPos blockPos, RedRouterBlockEntity redrouter) {
+    public static void updateInputs(Level world, BlockPos blockPos, @NotNull RedRouterBlockEntity redrouter) {
         for (Map.Entry<String, Integer> entry : redrouter.inputDir.entrySet()) {
             String side = entry.getKey();
             Direction dir = Direction.byName(side).getOpposite();
@@ -80,6 +81,9 @@ public class RedRouterBlockEntity extends BlockEntity implements PeripheralBlock
             BlockState block = world.getBlockState(offsetPos);
 
             int power = block.getBlock().getSignal(block, world, offsetPos, dir);
+
+            if (redrouter.inputDir.get(side) != power) { redrouter.newInputs = true; }
+
             redrouter.inputDir.put(side, power);
         }
     }
